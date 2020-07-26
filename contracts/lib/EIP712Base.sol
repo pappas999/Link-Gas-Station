@@ -23,12 +23,18 @@ contract EIP712Base {
 		));
     }
 
+    /*
+     * Returns the chain ID
+     */
     function getChainID() internal pure returns (uint256 id) {
 		assembly {
 			id := chainid()
 		}
 	}
 
+    /*
+     * Returns the domain seperator for this meta transaction
+     */
     function getDomainSeperator() private view returns(bytes32) {
 		return domainSeperator;
 	}

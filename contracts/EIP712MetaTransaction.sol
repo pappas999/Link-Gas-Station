@@ -13,8 +13,6 @@ contract EIP712MetaTransaction is EIP712Base {
 
     /*
      * Meta transaction structure.
-     * No point of including value field here as if user is doing value transfer then he has the funds to pay for gas
-     * He should call the desired function directly in that case.
      */
     struct MetaTransaction {
 		uint256 nonce;
@@ -24,6 +22,9 @@ contract EIP712MetaTransaction is EIP712Base {
 
     constructor(string memory name, string memory version) public EIP712Base(name, version) {}
 
+   /**
+     * Executes the meta transaction if it's valid
+     */
     function executeMetaTransaction(address userAddress,
         bytes memory functionSignature, bytes32 sigR, bytes32 sigS, uint8 sigV) public payable returns(bytes memory) {
 
@@ -41,7 +42,11 @@ contract EIP712MetaTransaction is EIP712Base {
         emit MetaTransactionExecuted(userAddress, msg.sender, functionSignature);
         return returnData;
     }
-
+	
+	
+   /**
+     * Hashes the meta transaction 
+     */
     function hashMetaTransaction(MetaTransaction memory metaTx) internal view returns (bytes32) {
 		return keccak256(abi.encode(
             META_TRANSACTION_TYPEHASH,
@@ -51,14 +56,23 @@ contract EIP712MetaTransaction is EIP712Base {
         ));
 	}
 
+   /**
+     * Returns the nonce
+     */
     function getNonce(address user) public view returns(uint256 nonce) {
         nonce = nonces[user];
     }
 
+   /**
+     * Verify that the transaction signature matches up with the signer
+     */
     function verify(address signer, MetaTransaction memory metaTx, bytes32 sigR, bytes32 sigS, uint8 sigV) internal view returns (bool) {
 		return signer == ecrecover(toTypedMessageHash(hashMetaTransaction(metaTx)), sigV, sigR, sigS);
 	}
 
+   /**
+     * Replacement for msg.sender
+     */
     function msgSender() internal view returns(address sender) {
         if(msg.sender == address(this)) {
             bytes memory array = msg.data;
@@ -73,9 +87,8 @@ contract EIP712MetaTransaction is EIP712Base {
         return sender;
     }
 
-
-
-
-    // To recieve ether in contract
+   /**
+     * To receives ETH in contract
+     */
     function() external payable { }
 }
