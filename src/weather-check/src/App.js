@@ -33,6 +33,7 @@ import Web3 from "web3";
 import axios from 'axios';
 let sigUtil = require("eth-sig-util");
 const { config } = require("./config");
+const BigNumber = require('bignumber.js');
 
 
 
@@ -57,8 +58,15 @@ let domainData = {
 
 let web3;
 let contract;
+let linkEthTotal = new BigNumber(0);
+let linkTotal =  new BigNumber(0);
+let ethTotal =  new BigNumber(0);
+let calcTotal =  new BigNumber(0);
 
-const { LinkToken } = require('@chainlink/contracts/truffle/v0.4/LinkToken');
+let linkPrice = new BigNumber(0);
+let ethPrice = new BigNumber(0);
+const ETH = 1000000000000000000;
+const linkPayment = 108000000000000000;
 const RELAYER_URL = 'http://localhost:7777';
 
 
@@ -68,6 +76,7 @@ function App() {
   const [checkCount, setNewCount] = useState("");
   const [newWeather, setNewWeather] = useState("");
   const [newCity, setNewCity] = useState("");
+  const [calculatedTotal, setNewCalcTotal] = useState("");
 
   
   const [selectedAddress, setSelectedAddress] = useState("");
@@ -78,7 +87,7 @@ function App() {
   //refresh values on screen from Contract every 60 seconds
   setInterval(function(){
 							getWeatherData();
-						}, 60000);  
+						}, 120000);  
   
   useEffect(() => {
     async function init() {
@@ -102,6 +111,7 @@ function App() {
           setSelectedAddress(provider.selectedAddress);
 		  console.log("contract: " + config.contract.address);
           getWeatherData(); //refresh values on screen from Smart Contract
+		  getContractCost(); //refresh calculated contract $ value
           provider.on("accountsChanged", function(accounts) {
             setSelectedAddress(accounts[0]);
           });
@@ -152,7 +162,6 @@ function App() {
         
 		
 		let message = {};
-		//let linkCall = "0";
         message.nonce = parseInt(nonce);
         message.from = userAddress;
         message.functionSignature = functionSignature;
@@ -197,13 +206,10 @@ function App() {
               });
               console.log('Recovered: ' +recovered);
 			  
-			  console.log('function sig is: ' + functionSignature);
+			  console.log('function signature is: ' + functionSignature);
 			  
 			  //Now build up json object to send to relayer
 			  //Need to check if its a LINK transaction/data request or a normal meta transaction
-			 
-			  
-			  
              let postJson = {
                   linkCall: linkCall,
                   city: newCity,
@@ -214,8 +220,6 @@ function App() {
 				  v: v
               }
 			  
-              console.log("postJson: ",postJson);
-			  
               //post the data to the relayer
               axios.post(RELAYER_URL + '/trans', postJson, {
                 headers: {
@@ -223,14 +227,13 @@ function App() {
                 }
               }).then((response)=>{
                 console.log("TX RESULT",response.data)
-                let hash = response.data.transactionHash
+                let hash = response.data.TransReceipt.transactionHash
                 console.log("adding custom tx with hash",hash)
 				showSuccessMessage("Transaction confirmed on chain. Hash is: " + hash);
-				getWeatherData();
+				getWeatherData();  //refresh weather data from contract
+				getContractCost(); //refresh calculated contract $ value
                
               });
-				
-			  
             }
           }
         );
@@ -264,7 +267,11 @@ function App() {
  /**
   * Refresh values on screen from Smart Contract
   */
-  const getWeatherData = () => {
+    const  getWeatherData = async () => {
+	
+	let linkUsed = new BigNumber(0);
+	let ethUsed = new BigNumber(0);
+	
     if (web3 && contract) {
 	 
 	  //Get Current Temperature in contract
@@ -272,7 +279,6 @@ function App() {
         .getCurrentTemp()
         .call()
         .then(function(result) {
-          //console.log("Temp result: " + result);
           if (
             result &&
             result != undefined 
@@ -292,7 +298,6 @@ function App() {
         .getTempCheckCount()
         .call()
         .then(function(result) {
-          //console.log("Temp Check Count: " + result);
           if (
             result &&
             result != undefined 
@@ -306,8 +311,82 @@ function App() {
             showErrorMessage("Not able to get weather information from Network");
           }
         });
+    }
+  };
+  
+   /**
+    * Calculate how much $ in ETH & LINK used by contract
+    */
+    const  getContractCost = async () => {
+	
+	let linkUsed = new BigNumber(0);
+	let ethUsed = new BigNumber(0);
+	
+    if (web3 && contract) {
+
+		console.log('calculating contract ETH & LINK cost');
 		
-		//Get Calculated fee payable
+		linkEthTotal = new BigNumber(0);
+        linkTotal = new BigNumber(0);
+        ethTotal = new BigNumber(0);
+        calcTotal = new BigNumber(0);
+	
+		//first loop through and get all LINK transfer transactions. For each one we will get the transaction hash and block, then from that the gas price & gas
+		//for each one found, we increment the LINK used
+		let res = await web3.eth.getPastLogs({fromBlock:'0x0',address: config.contract.address, topics: ["0xfcec3eab9d5f960da56e1e0007d265c1e5ce31a294bf9af4d5331a0be69301cb"]});
+		
+		for (const rec of res) {			
+			let tx = await web3.eth.getTransaction(rec.transactionHash);			 
+				ethPrice = new BigNumber((web3.eth.abi.decodeParameters(['int256', 'int256'], rec.data)[0]) / 100000000);
+				linkPrice = new BigNumber((web3.eth.abi.decodeParameters(['int256', 'int256'], rec.data)[1]) / 100000000);
+							
+				//to get gas used, we need to check the tx receipt, as the tx only has the gas limit
+				let txRec = await web3.eth.getTransactionReceipt(rec.transactionHash);
+								
+				ethUsed = new BigNumber((txRec.gasUsed * tx.gasPrice) / ETH);
+				ethUsed = ethUsed.times(ethPrice);
+				
+				//if this event is a data request one (identified by the topic), then we also need to add a LINK request x LINKUSD price to the running total
+				linkEthTotal =  linkEthTotal.plus(ethUsed);   
+				console.log('new linkEthTotal: ' + linkEthTotal);
+				
+				//now add to the LINK total using linkUSD price
+				linkUsed = new BigNumber(linkPayment/ETH);  //price of 1 request for this contract
+				linkUsed = linkUsed.times(linkPrice);
+				linkTotal =  linkTotal.plus(linkUsed);   
+				console.log('new linkTotal: ' + linkTotal);
+				console.log('finished processing LINK event');
+		}
+		
+		//now process normal ETH transactions, captured in event topic "0xc65c4c99140b1aefce6c290f708093f4987e42cf1e3fabe5ae019c926e8bbe01"
+		let ethRes = await web3.eth.getPastLogs({fromBlock:'0x0',address: config.contract.address, topics: ["0xc65c4c99140b1aefce6c290f708093f4987e42cf1e3fabe5ae019c926e8bbe01"]});
+		
+		for (const ethRec of ethRes) {			
+			let ethTx = await web3.eth.getTransaction(ethRec.transactionHash);		 
+				ethPrice = new BigNumber((web3.eth.abi.decodeParameters(['int256'], ethRec.data)[0]) / 100000000);
+				
+				//to get gas used, we need to check the tx receipt, as the tx only has the gas limit
+				let ethTxRec = await web3.eth.getTransactionReceipt(ethRec.transactionHash);
+								
+				ethUsed = new BigNumber((ethTxRec.gasUsed * ethTx.gasPrice) / ETH);				
+				ethUsed = ethUsed.times(ethPrice);
+				ethTotal =  ethTotal.plus(ethUsed);   
+				console.log('new linkTotal: ' + linkTotal);
+				console.log('finished processing ETH event');
+		}
+		
+		//Now add all 3 subotals together to get the final $ value
+		calcTotal = calcTotal.plus(linkEthTotal);
+		calcTotal = calcTotal.plus(linkTotal);
+		calcTotal = calcTotal.plus(ethTotal).toFormat(2);
+
+		//Reset parameters
+		linkEthTotal = new BigNumber(0);
+		linkTotal = new BigNumber(0);
+		ethTotal = new BigNumber(0);
+		
+		//Refresh new calculated value to screen
+		setNewCalcTotal(calcTotal);
     }
   };
   
@@ -356,9 +435,14 @@ function App() {
 			
 			&nbsp;&nbsp;Chainlink data request count: &nbsp;&nbsp; 
 		    <input type="text" name="dataFetchCount" value= {checkCount} readonly/>
+			
 			</div>
 			<div>&nbsp;</div>
 		    <div>
+			&nbsp;&nbsp;
+			Calculated Total $ Amount used in LINK & ETH: &nbsp;&nbsp; 
+			
+			 $<input type="text" name="invoiceTotal" value= {calculatedTotal} readonly/> &nbsp;&nbsp;
 			<Button variant="contained" color="primary" onClick={resetContract}>
              Reset Contract
             </Button>
