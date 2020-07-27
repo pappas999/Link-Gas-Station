@@ -31,7 +31,7 @@ Because historical Chainlink Price feeds are done at a period level which doesn'
 # Video demo
 
 <p align="center">
-   <a target="_blank" href="https://www.youtube.com/watch?v=CAcRVk_i6zo" target="_blank>
+   <a target="_blank" href="https://www.youtube.com/watch?v=CAcRVk_i6zo" target="_blank">
     <img src="https://github.com/pappas999/Link-Gas-Station/blob/master/src/weather-check/public/youtube.png"/>
    </a>
 </p>
