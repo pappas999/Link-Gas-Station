@@ -47,7 +47,7 @@ Because historical Chainlink Price feeds are done at a period level which doesn'
 npm install
 
 # compile contract
-truffle complier
+truffle complie
 
 # migrate contract
 # You can update truffle-config to migrate to ropten, or you can take the remix version of the contract (WeatherCheck-remix.sol), paste it in a new remix file, compile against 0.5.13 istanbul EVM, then deploy to ropsten.
