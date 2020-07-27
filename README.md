@@ -1,7 +1,8 @@
-<h1 align="center">LINK Gas Station</h1>
+ <div align=”center”>
 
 ![alt](https://github.com/pappas999/Link-Gas-Station/blob/master/src/weather-check/public/github.jpg)
-
+ </div>
+ 
 # Description
 
 Smart Contracts that make use of the Chainlink Decentralized Oracle network need to pay node operators in the form of LINK tokens. In addition to this, they also need to pay gas (eth) costs for all transactions against the contract that cause a state change. This means users of these Chainlinked contracts need to purchase and own both LINK & ETH to in order to use the Chainlink network, or someone needs to constantly ensure the contracts have enough LINK & ETH in them for upcoming contract interactions. Currently, many enterprises and businesses are not wanting to buy, own or hold any cryptocurrencies. This Link Gas Station design pattern demonstrates that these enterprises and businesses can actually interact and use Chainlinked Smart Contracts without needing to buy, hold or own any LINK or ETH, and let someone else provide the ETH & LINK as a service, which the company or business can then get billed in fiat on a regular basis for. To add to this, the way in which the service provider keeps track of the $ amount of ETH & LINK a contract has used is based on a combination of raw blockchain data as well as the highly secure & reliable Chainlink decentrlized Price Reference feeds, which means that the $ value calculation is just as secure, reliable and immutable as the Smart Contract it's based on. 
