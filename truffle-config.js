@@ -70,7 +70,7 @@ module.exports = {
        skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
      }
 
-    // Useful for private networks
+    // Useful for private networks 
     // private: {
       // provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
       // network_id: 2111,   // This network is yours, in the cloud.
