@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "ethereumjs-tx": "^2.1.2",
     "express": "^4.17.1",
     "helmet": "^3.23.3",
