@@ -15,9 +15,9 @@ This is a simple example demonstrating the design pattern described above. In ou
 
 # Keeping Track of the Contract Cost
 
-Because a third party is providing the ETH & LINK required for interacting with Chainlinked Smart Contracts, they need to keep track of exactly how much is used in each transaction, and what the price of ETH & LINK was at the time of transaction. With this information they can then calculate a running total of how much they need to invoice the contract user for. Eg if the contract has used $100 in ETH & LINK, the relayer service provider needs to be able to confidently calculate the $100 based on data on-chain, then they can add a margin (eg 10%), and bill the contract user the final amount in $.
+Because a third party is providing the ETH & LINK required for interacting with Chainlinked Smart Contracts, they need to keep track of exactly how much is used in each transaction, and what the price of ETH & LINK was at the time of transaction. With this information they can then calculate a running total of how much they need to invoice the contract user for. Eg if the contract has used 100 dollars in ETH & LINK, the relayer service provider needs to be able to confidently calculate the 100 dollar based on data on-chain, then they can add a margin (eg 10%), and bill the contract user the final amount in dollars.
 
-The data required to keep track of a running $ spent total for a Chainlinked Smart Contract is the following items. Each is required per contract transaction that caused a state change:
+The data required to keep track of a running dollars spent total for a Chainlinked Smart Contract is the following items. Each is required per contract transaction that caused a state change:
 
 1. Amount of ETH used per transaction. Gas Used x Gas Price. Obtained from Transaction & Transaction Receipt
 2. Amount of LINK transferred to the contract. Should equal the same amount of LINK transferred out of the contract
